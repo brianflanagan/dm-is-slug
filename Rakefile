@@ -20,8 +20,8 @@ begin
     gem.homepage = "http://github.com/aq1018/dm-is-slug"
     gem.authors = ['Aaron Qian', 'James Herdman', 'Nik Radford', 'Paul', 'Mike Frawley', 'Alexander Mankuta']
 
-    gem.add_dependency "dm-core", "~> 1.1.0.rc3"
-    gem.add_dependency "dm-validations", "~> 1.1.0.rc3"
+    gem.add_dependency "dm-core", "~> 1.1.0"
+    gem.add_dependency "dm-validations", "~> 1.1.0"
     gem.add_dependency "unidecode", "~> 1.0.0"
 
     gem.add_development_dependency 'rspec', '~> 1.3'
