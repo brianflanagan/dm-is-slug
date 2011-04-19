@@ -155,8 +155,8 @@ module DataMapper
         # 3. scope is not changed
         def stale_slug?
           !(
-            (permanent_slug? && !slug.blank?) ||
-            slug_source_value.blank?
+            (permanent_slug? && !(slug.nil? or slug.empty?)) ||
+            (slug_source_value.nil? or slug_source_value.empty?)
           ) ||
           !(!new? && (dirty_attributes.keys.map(&:name) &
                       (self.class.slug_options[:scope] || [])).compact.blank?
@@ -211,7 +211,7 @@ module DataMapper
           end.compact.max
 
           new_index = if max_index.nil?
-            self.class.first(not_self_conditions.merge(scope_conditions).merge :slug => base_slug).present? ? 2 : 1
+            !(self.class.first(not_self_conditions.merge(scope_conditions).merge :slug => base_slug).nil? or self.class.first(not_self_conditions.merge(scope_conditions).merge :slug => base_slug).empty?) ? 2 : 1
           else
             max_index + 1
           end
