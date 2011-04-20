@@ -159,7 +159,7 @@ module DataMapper
             (slug_source_value.nil? or slug_source_value.empty?)
           ) ||
           !(!new? && (dirty_attributes.keys.map(&:name) &
-                      (self.class.slug_options[:scope] || [])).compact.blank?
+                      (self.class.slug_options[:scope] || [])).compact.empty?
           )
         end
 
