@@ -11,6 +11,7 @@ module DataMapper
       end
 
       class InvalidSlugSourceError < StandardError; end
+      class InvalidSlugEscapingError < StandardError; end
 
       # @param [String] str A string to escape for use as a slug
       # @return [String] an URL-safe string
@@ -22,7 +23,13 @@ module DataMapper
         s.gsub!(/\ +/, '-')
         s
       end
-
+      
+      # @param [String] str A string to test, if all chars are properly escaped as an URL-safe string
+      # @return [Boolean] Whether all chars in *str* are URL-safe
+      def self.valid?(str)
+        !(str.match(/[^0-9\x61-\x7a-]/u) || str.match(/-{2,}/))
+      end
+      
       ##
       # Methods that should be included in DataMapper::Model.
       # Normally this should just be your generator, so that the namespace
@@ -162,24 +169,25 @@ module DataMapper
                       (self.class.slug_options[:scope] || [])).compact.blank?
           )
         end
-
+        
         private
 
         def generate_slug
           return unless self.class.respond_to?(:slug_options) && self.class.slug_options
           raise InvalidSlugSourceError, 'Invalid slug source.' unless slug_source_property || self.respond_to?(slug_source)
-          return unless stale_slug?
+          raise InvalidSlugEscapingError, 'The slug contains invalid character(s)' unless slug.blank? || ::DataMapper::Is::Slug.valid?(slug)
+          return if !stale_slug?
 
-          attribute_set :slug, unique_slug
+          attribute_set :slug, unique_slug(slug_source_value)
         end
 
-        def unique_slug
+        def unique_slug(base_slug=nil)
           # We can't do much with nothing. We'll assign nil to the slug property and 
           # let the validations take care of the rest
-          return nil if slug_source_value == nil
+          return nil if base_slug.nil?
 
           max_length = self.class.send(:get_slug_length)
-          base_slug = ::DataMapper::Is::Slug.escape(slug_source_value)[0, max_length]
+          base_slug = ::DataMapper::Is::Slug.escape(base_slug)[0, max_length]
           # Assuming that 5 digits is more than enought
           index_length = 5
           new_slug = base_slug
