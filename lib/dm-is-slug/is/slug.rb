@@ -178,16 +178,16 @@ module DataMapper
           raise InvalidSlugEscapingError, 'The slug contains invalid character(s)' unless slug.blank? || ::DataMapper::Is::Slug.valid?(slug)
           return if !stale_slug?
 
-          attribute_set :slug, unique_slug(slug_source_value)
+          attribute_set :slug, unique_slug
         end
 
-        def unique_slug(base_slug=nil)
+        def unique_slug
           # We can't do much with nothing. We'll assign nil to the slug property and 
           # let the validations take care of the rest
-          return nil if base_slug.nil?
+          return nil if slug_source_value.nil?
 
           max_length = self.class.send(:get_slug_length)
-          base_slug = ::DataMapper::Is::Slug.escape(base_slug)[0, max_length]
+          base_slug = ::DataMapper::Is::Slug.escape(slug_source_value)[0, max_length]
           # Assuming that 5 digits is more than enought
           index_length = 5
           new_slug = base_slug
