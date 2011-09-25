@@ -4,6 +4,29 @@ require 'dm-core/support/chainable'
 require 'dm-validations'
 
 module DataMapper
+  
+  module Validations
+    module Format
+      module Slug
+        def self.included(base)
+          DataMapper::Validations::FormatValidator::FORMATS.merge!(
+            :slug => [
+              Slug,
+              lambda { |field, value|
+                '%s is not a valid slug'.t(value)
+              }
+            ]
+          )
+        end
+        
+        Slug = begin
+          # lowercase ascii, numbers, single dashes, no dashes at start or end
+          /^([0-9\x61-\x7a]|(?:[^-]-[^-]))+$/u
+        end
+      end
+    end
+  end
+      
   module Is
     module Slug
       def self.included(base)
@@ -11,7 +34,6 @@ module DataMapper
       end
 
       class InvalidSlugSourceError < StandardError; end
-      class InvalidSlugEscapingError < StandardError; end
 
       # @param [String] str A string to escape for use as a slug
       # @return [String] an URL-safe string
@@ -22,12 +44,6 @@ module DataMapper
         s.downcase!
         s.gsub!(/\ +/, '-')
         s
-      end
-      
-      # @param [String] str A string to test, if all chars are properly escaped as an URL-safe string
-      # @return [Boolean] Whether all chars in *str* are URL-safe
-      def self.valid?(str)
-        !(str.match(/[^0-9\x61-\x7a-]/u) || str.match(/-{2,}/))
       end
       
       ##
@@ -97,6 +113,8 @@ module DataMapper
           validates_uniqueness_of :slug, scope_options
         end
 
+        validates_format_of :slug, :as => :slug
+        
         before :valid?, :generate_slug
       end
 
@@ -175,8 +193,7 @@ module DataMapper
         def generate_slug
           return unless self.class.respond_to?(:slug_options) && self.class.slug_options
           raise InvalidSlugSourceError, 'Invalid slug source.' unless slug_source_property || self.respond_to?(slug_source)
-          raise InvalidSlugEscapingError, 'The slug contains invalid character(s)' unless slug.blank? || ::DataMapper::Is::Slug.valid?(slug)
-          return if !stale_slug?
+          return unless stale_slug?
 
           attribute_set :slug, unique_slug
         end
@@ -242,3 +259,13 @@ module DataMapper
     end # Slug
   end # Is
 end # DataMapper
+
+
+module DataMapper
+  module Validations
+    class FormatValidator
+      include DataMapper::Validations::Format::Slug   
+    end
+  end
+end
+      
