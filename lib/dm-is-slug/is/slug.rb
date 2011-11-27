@@ -21,7 +21,7 @@ module DataMapper
         
         Slug = begin
           # lowercase ascii, numbers, single dashes, no dashes at start or end
-          /^([0-9\x61-\x7a]|(?:[^-]-[^-]))+$/u
+          /^(?!-)([0-9\x61-\x7a]|(?:-[^-]))+$/u
         end
       end
     end
