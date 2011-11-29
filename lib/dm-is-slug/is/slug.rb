@@ -4,6 +4,29 @@ require 'dm-core/support/chainable'
 require 'dm-validations'
 
 module DataMapper
+  
+  module Validations
+    module Format
+      module Slug
+        def self.included(base)
+          DataMapper::Validations::FormatValidator::FORMATS.merge!(
+            :slug => [
+              Slug,
+              lambda { |field, value|
+                '%s is not a valid slug'.t(value)
+              }
+            ]
+          )
+        end
+        
+        Slug = begin
+          # lowercase ascii, numbers, single dashes, no dashes at start or end
+          /^(?!-)([0-9\x61-\x7a]|(?:-[^-]))+$/u
+        end
+      end
+    end
+  end
+      
   module Is
     module Slug
       def self.included(base)
@@ -22,7 +45,7 @@ module DataMapper
         s.gsub!(/\ +/, '-')
         s
       end
-
+      
       ##
       # Methods that should be included in DataMapper::Model.
       # Normally this should just be your generator, so that the namespace
@@ -90,6 +113,8 @@ module DataMapper
           validates_uniqueness_of :slug, scope_options
         end
 
+        validates_format_of :slug, :as => :slug
+        
         before :valid?, :generate_slug
       end
 
@@ -162,17 +187,22 @@ module DataMapper
                       (self.class.slug_options[:scope] || [])).compact.empty?
           )
         end
-
+        
         private
 
         def generate_slug
           return unless self.class.respond_to?(:slug_options) && self.class.slug_options
           raise InvalidSlugSourceError, 'Invalid slug source.' unless slug_source_property || self.respond_to?(slug_source)
           return unless stale_slug?
+
           attribute_set :slug, unique_slug
         end
 
         def unique_slug
+          # We can't do much with nothing. We'll assign nil to the slug property and 
+          # let the validations take care of the rest
+          return nil if slug_source_value.nil?
+
           max_length = self.class.send(:get_slug_length)
           base_slug = ::DataMapper::Is::Slug.escape(slug_source_value)[0, max_length]
           # Assuming that 5 digits is more than enought
@@ -229,3 +259,13 @@ module DataMapper
     end # Slug
   end # Is
 end # DataMapper
+
+
+module DataMapper
+  module Validations
+    class FormatValidator
+      include DataMapper::Validations::Format::Slug   
+    end
+  end
+end
+      
